@@ -10,7 +10,7 @@ import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://tamilultratv.com"
+    override var mainUrl = "https://tamilultratv.co.in"
     override var name = "TamilUltra"
     override val hasMainPage = true
     override var lang = "ta"
