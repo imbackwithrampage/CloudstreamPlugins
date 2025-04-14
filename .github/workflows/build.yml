@@ -55,6 +55,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
+      - name: Create local.properties
+        run: |
+          cd $GITHUB_WORKSPACE/src
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+          cat local.properties
+
       - name: Build Plugins
         run: |
           cd $GITHUB_WORKSPACE/src

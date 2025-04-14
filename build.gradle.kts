@@ -13,7 +13,7 @@ buildscript {
         classpath("com.android.tools.build:gradle:8.1.2")
         // Cloudstream gradle plugin which makes everything work and builds plugins
         classpath("com.github.recloudstream:gradle:-SNAPSHOT")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.21")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
     }
 }
 
@@ -61,7 +61,10 @@ subprojects {
                 freeCompilerArgs = freeCompilerArgs +
                         "-Xno-call-assertions" +
                         "-Xno-param-assertions" +
-                        "-Xno-receiver-assertions"
+                        "-Xno-receiver-assertions" +
+                        "-Xdeprecation-is-not-an-error"
+                allWarningsAsErrors = false
+                suppressWarnings = true
             }
         }
     }
