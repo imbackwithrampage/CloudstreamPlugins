@@ -84,7 +84,7 @@ jobs:
             exit 0
           fi
           git init
-          git checkout -b builds
+          git checkout -b builds 2>/dev/null || git checkout builds
           git add .
           git commit -m "Build $GITHUB_SHA"
           git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
