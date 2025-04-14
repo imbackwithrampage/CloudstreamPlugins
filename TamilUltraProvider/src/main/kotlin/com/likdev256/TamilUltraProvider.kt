@@ -1,17 +1,21 @@
 package com.likdev256
 
-//import android.util.Log
+import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils
 import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.M3u8Helper
+import com.lagradost.cloudstream3.utils.getQualityFromName
+import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
+@SuppressWarnings("deprecation")
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://tamilultratv.co.in"
-    override var name = "TamilUltra"
+    override var name = "Tamil Ultra"
     override val hasMainPage = true
     override var lang = "ta"
     override val hasDownloadSupport = true
@@ -117,7 +121,7 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
             }
     }
 
-    
+    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -132,16 +136,16 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                     referer
                 ).parsed<EmbedUrl>().embedUrl
             ).toString()
-        callback.invoke(
-            ExtractorLink(
-                name,
-                name,
-                link.substringAfter(".php?"),
-                referer,
-                Qualities.Unknown.value,
-                true
-            )
-        )
+        
+        // Use M3u8Helper for M3u8 links
+        val m3u8Url = link.substringAfter(".php?")
+        
+        // Use M3u8Helper for handling M3u8 streams
+        M3u8Helper.generateM3u8(
+            this.name,
+            m3u8Url,
+            referer
+        ).forEach(callback)
 
         return true
     }
