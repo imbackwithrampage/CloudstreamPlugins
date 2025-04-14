@@ -5,9 +5,9 @@ version = 12
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Please wait for 10seconds to bypass the ads"
+    description = "Indian MultiLanguage Provider (Mostly Hindi)"
     language = "hi"
-    authors = listOf("darkdemon, likdev256")
+    authors = listOf("LikDev-256")
 
     /**
     * Status int as the following:
@@ -22,16 +22,9 @@ cloudstream {
     // You can find a list of avaliable types here:
     // https://recloudstream.github.io/cloudstream/html/app/com.lagradost.cloudstream3/-tv-type/index.html
     tvTypes = listOf(
-        "TvSeries",
         "Movie",
-        "Anime",
+        "TvSeries",
         "Cartoon"
     )
-    iconUrl = "https://www.google.com/s2/favicons?domain=allmoviesland.com&sz=%size%"
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions {
-        freeCompilerArgs = listOf("-Xdeprecation-is-not-an-error")
-    }
+    iconUrl = "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/AllMovieLandProvider/icon.png"
 }
