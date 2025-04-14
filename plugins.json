@@ -1,0 +1,21 @@
+[
+    {
+        "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/TamilUltraProvider/icon.png",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/imbackwithrampage/CloudstreamPlugins",
+        "fileSize": 11144,
+        "status": 1,
+        "language": "ta",
+        "authors": [
+            "LikDev-256"
+        ],
+        "tvTypes": [
+            "Live"
+        ],
+        "version": 2,
+        "internalName": "TamilUltraProvider",
+        "description": "Indian Live TV Provider",
+        "url": "https://raw.githubusercontent.com/imbackwithrampage/CloudstreamPlugins/builds/TamilUltraProvider.cs3",
+        "name": "TamilUltraProvider"
+    }
+]
