@@ -14,7 +14,7 @@ import okhttp3.FormBody
 
 @SuppressWarnings("deprecation")
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://tamilultra.us"
+    override var mainUrl = "https://tamilultratv.co.in"
     override var name = "Tamil Ultra"
     override val hasMainPage = true
     override var lang = "ta"
