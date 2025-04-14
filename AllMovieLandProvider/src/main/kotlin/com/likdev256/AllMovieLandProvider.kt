@@ -13,8 +13,9 @@ import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 import org.jsoup.nodes.Element
 
+@SuppressWarnings("deprecation")
 class AllMovieLandProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://allmovieland.fun"
+    override var mainUrl = "https://www.allmoviesland.in"
     override var name = "AllMovieLand"
     override val hasMainPage = true
     override var lang = "hi"
@@ -343,6 +344,7 @@ class AllMovieLandProvider : MainAPI() { // all providers must be an instance of
         @JsonProperty("id"      ) var id     : String?
     )
 
+    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,

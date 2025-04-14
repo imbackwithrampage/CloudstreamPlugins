@@ -11,6 +11,7 @@ import com.lagradost.nicehttp.Session
 import kotlinx.coroutines.delay
 import org.jsoup.nodes.Element
 
+@SuppressWarnings("deprecation")
 class AnimeWorldProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://anime-world.in"
     override var name = "AnimeWorld"
@@ -143,25 +144,69 @@ class AnimeWorldProvider : MainAPI() { // all providers must be an instance of M
         }
     }
 
+    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        Log.d("test", data)
+        val langPair = mapOf(
+            "af" to "(AF)",
+            "ar" to "(AR)",
+            "bd" to "(BD)",
+            "bgp" to "(BGP)",
+            "bg" to "(BG)",
+            "ca" to "(CA)",
+            "chs" to "(CHS)",
+            "hr" to "(HR)",
+            "cz" to "(CZ)",
+            "da" to "(DA)",
+            "nl" to "(NL)",
+            "en" to "(EN)",
+            "et" to "(ET)",
+            "fi" to "(FI)",
+            "fr" to "(FR)",
+            "de" to "(DE)",
+            "gr" to "(GR)",
+            "he" to "(HE)",
+            "hu" to "(HU)",
+            "id" to "(ID)",
+            "it" to "(IT)",
+            "ja" to "(JA)",
+            "ko" to "(KO)",
+            "lt" to "(LT)",
+            "ms" to "(MS)",
+            "no" to "(NO)",
+            "fa" to "(FA)",
+            "pl" to "(PL)",
+            "pt" to "(PT)",
+            "pb" to "(PB)",
+            "ro" to "(RO)",
+            "ru" to "(RU)",
+            "si" to "(SI)",
+            "es" to "(ES)",
+            "sv" to "(SV)",
+            "th" to "(TH)",
+            "tr" to "(TR)",
+            "ua" to "(UA)",
+            "vi" to "(VI)",
+            "af" to "(AF)"
+        )
 
-        val document = app.get(data).document
-        Log.d("test", document.select("h2.title").text())
-        if (document.select("h2.title").text().contains("Skip Ad")) {
-            val link = document.selectFirst(".glass-button")!!.attr("onclick").substringAfter("'")
-                .substringBefore("'")
-            bypassRockLinks(link)
+        if (data.contains("a-w.xyz/sv")) {
+            bypassRockLinks(data)
         } else {
-            val langPair = document.select(".aa-tbs li").associate {
-                it.select("a").attr("href").replace("#", "") to it.select(".server").text()
-                    .split("-")
+            val document = app.get(data).document
+            if (document.select("#content > div.serverslist").isEmpty()) {
+                app.get(document.select("#ddpbtn").attr("onclick")
+                    .split("=".toRegex())
                     .last().trim()
+                )
+            } else {
+                document.select(".serversbtn").lastOrNull()?.attr("onclick")?.split("'".toRegex())
+                    ?.getOrNull(1)
+                    ?.last()?.toString()?.trim()
             }
             document.select(".aa-cn div").map { res ->
 
