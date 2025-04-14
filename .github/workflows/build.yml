@@ -5,6 +5,10 @@ concurrency:
   group: "build"
   cancel-in-progress: true
 
+# Add permissions for GitHub token
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -79,10 +83,9 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-          git init || true
-          git checkout -b builds || true
+          git init
+          git checkout -b builds
           git add .
-          git commit -m "Build $GITHUB_SHA" || true
-          git remote add origin "https://github.com/$GITHUB_REPOSITORY.git" || true
+          git commit -m "Build $GITHUB_SHA"
+          git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           git push -f -u origin builds
-        continue-on-error: true
