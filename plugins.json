@@ -3,7 +3,7 @@
         "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/TamilUltraProvider/icon.png",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/imbackwithrampage/CloudstreamPlugins",
-        "fileSize": 14711,
+        "fileSize": 19459,
         "status": 1,
         "language": "ta",
         "authors": [
@@ -12,9 +12,9 @@
         "tvTypes": [
             "Live"
         ],
-        "version": 4,
+        "version": 5,
         "internalName": "TamilUltraProvider",
-        "description": "Indian Live TV Provider - Fixed streaming functionality and compatibility",
+        "description": "Tamil TV provider with direct streams - Completely rebuilt with hardcoded streams",
         "url": "https://raw.githubusercontent.com/imbackwithrampage/CloudstreamPlugins/builds/TamilUltraProvider.cs3",
         "name": "TamilUltraProvider"
     }
