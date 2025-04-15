@@ -158,7 +158,8 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                 val scriptData = iframeDoc.select("script").mapNotNull { 
                     try { it.data() } catch (e: Exception) { null } 
                 }.joinToString("\n")
-                val m3u8Regex = Regex("['\"](https?://[^'\"]+\\.m3u8[^'\"]*)['\"]")
+                // Enhanced regex to catch more variations of m3u8 URLs
+                val m3u8Regex = Regex("['\"](https?://[^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]")
                 val m3u8Urls = m3u8Regex.findAll(scriptData).map { it.groupValues[1] }.toList()
                 
                 // Combine all URLs
@@ -167,36 +168,157 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                 // Process M3U8 links
                 allStreamUrls.forEach { url ->
                     if (url.contains(".m3u8")) {
+                        // Try to detect quality from URL
+                        val quality = when {
+                            url.contains("_hd") || url.contains("1080") -> Qualities.P1080.value
+                            url.contains("_720") || url.contains("720") -> Qualities.P720.value
+                            url.contains("_480") || url.contains("480") -> Qualities.P480.value
+                            url.contains("_360") || url.contains("360") -> Qualities.P360.value
+                            else -> Qualities.Unknown.value
+                        }
+                        
                         M3u8Helper.generateM3u8(
                             name,
                             url,
-                            embedUrl
-                        ).forEach(callback)
+                            embedUrl,
+                            headers = mapOf("Referer" to embedUrl)
+                        ).forEach { link ->
+                            // Override quality if detected from URL and link's quality is unknown
+                            if (quality > 0 && link.quality == Qualities.Unknown.value) {
+                                callback(
+                                    ExtractorLink(
+                                        link.source,
+                                        link.name,
+                                        link.url,
+                                        link.referer,
+                                        quality,
+                                        link.isM3u8,
+                                        link.headers,
+                                        link.extractorData
+                                    )
+                                )
+                            } else {
+                                callback(link)
+                            }
+                        }
                     }
                 }
                 
                 // Check for stream URL in params
                 if (embedUrl.contains(".php?")) {
-                    val streamUrl = embedUrl.substringAfter(".php?")
+                    // Enhanced PHP parameter parsing
+                    val queryParams = try {
+                        val queryString = embedUrl.substringAfter(".php?", "")
+                        if (queryString.isNotBlank()) {
+                            queryString.split("&").mapNotNull { param ->
+                                val parts = param.split("=", limit = 2)
+                                if (parts.size == 2) parts[0] to parts[1] else null
+                            }.toMap()
+                        } else emptyMap()
+                    } catch (e: Exception) {
+                        emptyMap<String, String>()
+                    }
+                    
+                    // Check common parameter names used for stream URLs
+                    val possibleStreamParams = listOf("source", "src", "file", "stream", "url", "link", "video")
+                    val streamUrl = possibleStreamParams.firstNotNullOfOrNull { param ->
+                        queryParams[param]?.takeIf { it.isNotBlank() }
+                    } ?: embedUrl.substringAfter(".php?")
+                    
                     if (streamUrl.isNotBlank() && (streamUrl.startsWith("http") || streamUrl.startsWith("//"))) {
                         val finalUrl = if (streamUrl.startsWith("//")) "https:$streamUrl" else streamUrl
                         if (finalUrl.contains(".m3u8")) {
-                            M3u8Helper.generateM3u8(
-                                name,
-                                finalUrl,
-                                embedUrl
-                            ).forEach(callback)
+                            try {
+                                // Try to detect quality from URL
+                                val quality = when {
+                                    finalUrl.contains("_hd") || finalUrl.contains("1080") -> Qualities.P1080.value
+                                    finalUrl.contains("_720") || finalUrl.contains("720") -> Qualities.P720.value
+                                    finalUrl.contains("_480") || finalUrl.contains("480") -> Qualities.P480.value
+                                    finalUrl.contains("_360") || finalUrl.contains("360") -> Qualities.P360.value
+                                    else -> Qualities.Unknown.value
+                                }
+                                
+                                M3u8Helper.generateM3u8(
+                                    name,
+                                    finalUrl,
+                                    embedUrl,
+                                    headers = mapOf("Referer" to embedUrl)
+                                ).forEach { link ->
+                                    // Override quality if detected from URL and link's quality is unknown
+                                    if (quality > 0 && link.quality == Qualities.Unknown.value) {
+                                        callback(
+                                            ExtractorLink(
+                                                link.source,
+                                                link.name,
+                                                link.url,
+                                                link.referer,
+                                                quality,
+                                                link.isM3u8,
+                                                link.headers,
+                                                link.extractorData
+                                            )
+                                        )
+                                    } else {
+                                        callback(link)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                logError(e)
+                            }
                         }
                     }
                 }
             } catch (e: Exception) {
                 // Fallback to direct M3u8 helper
                 if (embedUrl.contains(".m3u8")) {
-                    M3u8Helper.generateM3u8(
-                        name,
-                        embedUrl,
-                        referer
-                    ).forEach(callback)
+                    try {
+                        // Try to detect quality from URL
+                        val quality = when {
+                            embedUrl.contains("_hd") || embedUrl.contains("1080") -> Qualities.P1080.value
+                            embedUrl.contains("_720") || embedUrl.contains("720") -> Qualities.P720.value
+                            embedUrl.contains("_480") || embedUrl.contains("480") -> Qualities.P480.value
+                            embedUrl.contains("_360") || embedUrl.contains("360") -> Qualities.P360.value
+                            else -> Qualities.Unknown.value
+                        }
+
+                        M3u8Helper.generateM3u8(
+                            name,
+                            embedUrl,
+                            referer,
+                            headers = mapOf("Referer" to referer)
+                        ).forEach { link ->
+                            // Override quality if detected from URL and link's quality is unknown
+                            if (quality > 0 && link.quality == Qualities.Unknown.value) {
+                                callback(
+                                    ExtractorLink(
+                                        link.source,
+                                        link.name,
+                                        link.url,
+                                        link.referer,
+                                        quality,
+                                        link.isM3u8,
+                                        link.headers,
+                                        link.extractorData
+                                    )
+                                )
+                            } else {
+                                callback(link)
+                            }
+                        }
+                    } catch (e2: Exception) {
+                        // Final fallback: try direct link extraction
+                        logError(e2)
+                        callback(
+                            ExtractorLink(
+                                name,
+                                name,
+                                embedUrl,
+                                referer,
+                                Qualities.Unknown.value,
+                                true
+                            )
+                        )
+                    }
                 }
             }
             
