@@ -15,7 +15,7 @@ import okhttp3.FormBody
 @SuppressWarnings("deprecation")
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
     // The site seems to have moved or changed URLs, trying alternative domain
-    override var mainUrl = "https://tvplayer.ml"
+    override var mainUrl = "https://tamilultratv.co.in"
     override var name = "TamilUltra"
     override val hasMainPage = true
     override var lang = "ta"
