@@ -170,11 +170,11 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                     if (url.contains(".m3u8")) {
                         // Try to detect quality from URL
                         val quality = when {
-                            url.contains("_hd") || url.contains("1080") -> Qualities.P1080.value
-                            url.contains("_720") || url.contains("720") -> Qualities.P720.value
-                            url.contains("_480") || url.contains("480") -> Qualities.P480.value
-                            url.contains("_360") || url.contains("360") -> Qualities.P360.value
-                            else -> Qualities.Unknown.value
+                            url.contains("_hd") || url.contains("1080") -> 1080
+                            url.contains("_720") || url.contains("720") -> 720
+                            url.contains("_480") || url.contains("480") -> 480
+                            url.contains("_360") || url.contains("360") -> 360
+                            else -> 0
                         }
                         
                         M3u8Helper.generateM3u8(
@@ -184,9 +184,9 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                             headers = mapOf("Referer" to embedUrl)
                         ).forEach { link ->
                             // Override quality if detected from URL and link's quality is unknown
-                            if (quality > 0 && link.quality == Qualities.Unknown.value) {
+                            if (quality > 0 && link.quality == 0) {
                                 callback(
-                                    ExtractorLink(
+                                    newExtractorLink(
                                         link.source,
                                         link.name,
                                         link.url,
@@ -231,11 +231,11 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                             try {
                                 // Try to detect quality from URL
                                 val quality = when {
-                                    finalUrl.contains("_hd") || finalUrl.contains("1080") -> Qualities.P1080.value
-                                    finalUrl.contains("_720") || finalUrl.contains("720") -> Qualities.P720.value
-                                    finalUrl.contains("_480") || finalUrl.contains("480") -> Qualities.P480.value
-                                    finalUrl.contains("_360") || finalUrl.contains("360") -> Qualities.P360.value
-                                    else -> Qualities.Unknown.value
+                                    finalUrl.contains("_hd") || finalUrl.contains("1080") -> 1080
+                                    finalUrl.contains("_720") || finalUrl.contains("720") -> 720
+                                    finalUrl.contains("_480") || finalUrl.contains("480") -> 480
+                                    finalUrl.contains("_360") || finalUrl.contains("360") -> 360
+                                    else -> 0
                                 }
                                 
                                 M3u8Helper.generateM3u8(
@@ -245,9 +245,9 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                                     headers = mapOf("Referer" to embedUrl)
                                 ).forEach { link ->
                                     // Override quality if detected from URL and link's quality is unknown
-                                    if (quality > 0 && link.quality == Qualities.Unknown.value) {
+                                    if (quality > 0 && link.quality == 0) {
                                         callback(
-                                            ExtractorLink(
+                                            newExtractorLink(
                                                 link.source,
                                                 link.name,
                                                 link.url,
@@ -274,11 +274,11 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                     try {
                         // Try to detect quality from URL
                         val quality = when {
-                            embedUrl.contains("_hd") || embedUrl.contains("1080") -> Qualities.P1080.value
-                            embedUrl.contains("_720") || embedUrl.contains("720") -> Qualities.P720.value
-                            embedUrl.contains("_480") || embedUrl.contains("480") -> Qualities.P480.value
-                            embedUrl.contains("_360") || embedUrl.contains("360") -> Qualities.P360.value
-                            else -> Qualities.Unknown.value
+                            embedUrl.contains("_hd") || embedUrl.contains("1080") -> 1080
+                            embedUrl.contains("_720") || embedUrl.contains("720") -> 720
+                            embedUrl.contains("_480") || embedUrl.contains("480") -> 480
+                            embedUrl.contains("_360") || embedUrl.contains("360") -> 360
+                            else -> 0
                         }
 
                         M3u8Helper.generateM3u8(
@@ -288,9 +288,9 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                             headers = mapOf("Referer" to referer)
                         ).forEach { link ->
                             // Override quality if detected from URL and link's quality is unknown
-                            if (quality > 0 && link.quality == Qualities.Unknown.value) {
+                            if (quality > 0 && link.quality == 0) {
                                 callback(
-                                    ExtractorLink(
+                                    newExtractorLink(
                                         link.source,
                                         link.name,
                                         link.url,
@@ -309,12 +309,12 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                         // Final fallback: try direct link extraction
                         logError(e2)
                         callback(
-                            ExtractorLink(
+                            newExtractorLink(
                                 name,
                                 name,
                                 embedUrl,
                                 referer,
-                                Qualities.Unknown.value,
+                                0,
                                 true
                             )
                         )
