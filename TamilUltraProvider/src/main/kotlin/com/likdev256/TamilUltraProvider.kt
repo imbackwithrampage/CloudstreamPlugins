@@ -127,95 +127,92 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-        val referer = data.substringBefore(",")
-        val id = data.substringAfter(",")
-        
-        // Get embed response
-        val embedResponse = getEmbed(id, "1", referer)
-        val embedData = embedResponse.parsed<EmbedUrl>()
-        val embedUrl = fixUrlNull(embedData.embedUrl) ?: return false
-        
-        // Log for debugging
-        Log.d("TamilUltra", "Embed URL: $embedUrl")
-        
-        // Handle iframe URL
-        val iframeDoc = app.get(embedUrl, referer = referer).document
-        
-        // Extract direct stream URL from iframe
-        // Look for source tags or script that contains stream URLs
-        val directUrls = iframeDoc.select("source").mapNotNull { it.attr("src") }
-        directUrls.forEach { sourceUrl ->
-            Log.d("TamilUltra", "Source URL: $sourceUrl")
-            if (sourceUrl.contains(".m3u8")) {
-                M3u8Helper.generateM3u8(
-                    this.name,
-                    sourceUrl,
-                    embedUrl
-                ).forEach(callback)
-            } else {
-                callback.invoke(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        sourceUrl,
+        try {
+            val referer = data.substringBefore(",")
+            val id = data.substringAfter(",")
+            
+            // Get embed response
+            val embedResponse = getEmbed(id, "1", referer)
+            val embedData = try {
+                embedResponse.parsed<EmbedUrl>()
+            } catch (e: Exception) {
+                logError(e)
+                return false
+            }
+            
+            val embedUrl = fixUrlNull(embedData.embedUrl) ?: return false
+            
+            // Try loadExtractor first
+            loadExtractor(embedUrl, referer, subtitleCallback, callback)
+            
+            // Try direct M3u8 handling
+            try {
+                val iframeDoc = app.get(embedUrl, referer = referer).document
+                
+                // Look for source tags
+                val sourceUrls = iframeDoc.select("source").mapNotNull { 
+                    it.attr("src").takeIf { it.isNotBlank() }
+                }
+                
+                // Look for m3u8 URLs in scripts
+                val scriptData = iframeDoc.select("script").mapNotNull { 
+                    try { it.data() } catch (e: Exception) { null } 
+                }.joinToString("\n")
+                val m3u8Regex = Regex("['\"](https?://[^'\"]+\\.m3u8[^'\"]*)['\"]")
+                val m3u8Urls = m3u8Regex.findAll(scriptData).map { it.groupValues[1] }.toList()
+                
+                // Combine all URLs
+                val allStreamUrls = (sourceUrls + m3u8Urls).filter { it.isNotBlank() }.distinct()
+                
+                // Process M3U8 links
+                allStreamUrls.forEach { url ->
+                    if (url.contains(".m3u8")) {
+                        M3u8Helper.generateM3u8(
+                            name,
+                            url,
+                            embedUrl
+                        ).forEach(callback)
+                    }
+                }
+                
+                // Check for stream URL in params
+                if (embedUrl.contains(".php?")) {
+                    val streamUrl = embedUrl.substringAfter(".php?")
+                    if (streamUrl.isNotBlank() && (streamUrl.startsWith("http") || streamUrl.startsWith("//"))) {
+                        val finalUrl = if (streamUrl.startsWith("//")) "https:$streamUrl" else streamUrl
+                        if (finalUrl.contains(".m3u8")) {
+                            M3u8Helper.generateM3u8(
+                                name,
+                                finalUrl,
+                                embedUrl
+                            ).forEach(callback)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                // Fallback to direct M3u8 helper
+                if (embedUrl.contains(".m3u8")) {
+                    M3u8Helper.generateM3u8(
+                        name,
                         embedUrl,
-                        Qualities.Unknown.value,
-                        false
-                    )
-                )
-            }
-        }
-        
-        // If no source tags, check for m3u8 URLs in scripts
-        if (directUrls.isEmpty()) {
-            val scriptData = iframeDoc.select("script").map { it.data() }.joinToString("\n")
-            val m3u8Regex = Regex("['\"](https?://[^'\"]+\\.m3u8[^'\"]*)['\"]")
-            val m3u8Urls = m3u8Regex.findAll(scriptData).map { it.groupValues[1] }.toList()
-            
-            m3u8Urls.forEach { m3u8Url ->
-                Log.d("TamilUltra", "M3U8 URL from script: $m3u8Url")
-                M3u8Helper.generateM3u8(
-                    this.name,
-                    m3u8Url,
-                    embedUrl
-                ).forEach(callback)
-            }
-            
-            // Check for stream URL in params
-            if (embedUrl.contains(".php?")) {
-                val streamUrl = embedUrl.substringAfter(".php?")
-                Log.d("TamilUltra", "Stream URL from params: $streamUrl")
-                if (streamUrl.isNotBlank() && (streamUrl.startsWith("http") || streamUrl.startsWith("//"))) {
-                    val finalUrl = if (streamUrl.startsWith("//")) "https:$streamUrl" else streamUrl
-                    callback.invoke(
-                        ExtractorLink(
-                            this.name,
-                            this.name,
-                            finalUrl,
-                            embedUrl,
-                            Qualities.Unknown.value,
-                            finalUrl.contains(".m3u8")
-                        )
-                    )
+                        referer
+                    ).forEach(callback)
                 }
             }
+            
+            return true
+        } catch (e: Exception) {
+            logError(e)
+            return false
         }
-        
-        // For debugging, try to directly load the embed URL itself if it's a player
-        if (embedUrl.contains("player") || embedUrl.contains("stream") || embedUrl.contains(".php")) {
-            callback.invoke(
-                ExtractorLink(
-                    this.name,
-                    "$name Direct",
-                    embedUrl,
-                    referer,
-                    Qualities.Unknown.value,
-                    embedUrl.contains(".m3u8")
-                )
-            )
+    }
+    
+    private fun logError(e: Exception) {
+        try {
+            Log.e("TamilUltra", "Error: ${e.message}", e)
+        } catch (_: Exception) {
+            // Ignore logging errors
         }
-
-        return true
     }
 }
 
