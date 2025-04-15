@@ -186,7 +186,7 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                             // Override quality if detected from URL and link's quality is unknown
                             if (quality > 0 && link.quality == 0) {
                                 callback(
-                                    newExtractorLink(
+                                    ExtractorLink(
                                         link.source,
                                         link.name,
                                         link.url,
@@ -247,7 +247,7 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                                     // Override quality if detected from URL and link's quality is unknown
                                     if (quality > 0 && link.quality == 0) {
                                         callback(
-                                            newExtractorLink(
+                                            ExtractorLink(
                                                 link.source,
                                                 link.name,
                                                 link.url,
@@ -290,7 +290,7 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                             // Override quality if detected from URL and link's quality is unknown
                             if (quality > 0 && link.quality == 0) {
                                 callback(
-                                    newExtractorLink(
+                                    ExtractorLink(
                                         link.source,
                                         link.name,
                                         link.url,
@@ -309,7 +309,7 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                         // Final fallback: try direct link extraction
                         logError(e2)
                         callback(
-                            newExtractorLink(
+                            ExtractorLink(
                                 name,
                                 name,
                                 embedUrl,
