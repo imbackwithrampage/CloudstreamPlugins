@@ -14,7 +14,7 @@
         ],
         "version": 5,
         "internalName": "TamilUltraProvider",
-        "description": "Tamil TV provider with direct streams - Completely rebuilt with hardcoded streams",
+        "description": "Indian Live TV Provider - Enhanced stream detection and quality selection",
         "url": "https://raw.githubusercontent.com/imbackwithrampage/CloudstreamPlugins/builds/TamilUltraProvider.cs3",
         "name": "TamilUltraProvider"
     }
