@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 4
+version = 5
 
 android {
     kotlinOptions {
@@ -10,7 +10,7 @@ android {
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Indian Live TV Provider - Fixed streaming functionality and compatibility"
+    description = "Tamil TV provider with direct streams - Completely rebuilt with hardcoded streams"
     language = "ta"
     authors = listOf("LikDev-256")
 
