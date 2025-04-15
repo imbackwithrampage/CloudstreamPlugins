@@ -10,7 +10,7 @@ android {
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Tamil TV provider with direct streams - Completely rebuilt with hardcoded streams"
+    description = "Indian Live TV Provider - Enhanced stream detection and quality selection"
     language = "ta"
     authors = listOf("LikDev-256")
 
