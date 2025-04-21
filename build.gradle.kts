@@ -62,7 +62,11 @@ subprojects {
                         "-Xno-call-assertions" +
                         "-Xno-param-assertions" +
                         "-Xno-receiver-assertions" +
-                        "-Xdeprecation-is-not-an-error"
+                        "-Xdeprecation-is-not-an-error" +
+                        "-P" +
+                        "plugin:org.jetbrains.kotlin.compiler.plugin.suppressers:suppressWarningsFromDependencies=true" +
+                        "-P" +
+                        "plugin:org.jetbrains.kotlin.compiler.plugin.suppressers:suppressUnrecognizedPluginOptionsWarning=true"
                 allWarningsAsErrors = false
                 suppressWarnings = true
             }

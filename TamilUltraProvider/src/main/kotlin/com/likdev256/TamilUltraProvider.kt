@@ -4,7 +4,10 @@ import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -14,7 +17,7 @@ import okhttp3.FormBody
 
 @SuppressWarnings("deprecation")
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://tamilultratv.co.in"
+    override var mainUrl = "https://tamilultra.fr"
     override var name = "TamilUltra"
     override val hasMainPage = true
     override var lang = "ta"
@@ -168,38 +171,15 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                 // Process M3U8 links
                 allStreamUrls.forEach { url ->
                     if (url.contains(".m3u8")) {
-                        // Try to detect quality from URL
-                        val quality = when {
-                            url.contains("_hd") || url.contains("1080") -> 1080
-                            url.contains("_720") || url.contains("720") -> 720
-                            url.contains("_480") || url.contains("480") -> 480
-                            url.contains("_360") || url.contains("360") -> 360
-                            else -> 0
-                        }
-                        
-                        M3u8Helper.generateM3u8(
-                            name,
-                            url,
-                            embedUrl,
-                            headers = mapOf("Referer" to embedUrl)
-                        ).forEach { link ->
-                            // Override quality if detected from URL and link's quality is unknown
-                            if (quality > 0 && link.quality == 0) {
-                                callback(
-                                    ExtractorLink(
-                                        link.source,
-                                        link.name,
-                                        link.url,
-                                        link.referer,
-                                        quality,
-                                        link.isM3u8,
-                                        link.headers,
-                                        link.extractorData
-                                    )
-                                )
-                            } else {
-                                callback(link)
-                            }
+                        try {
+                            M3u8Helper.generateM3u8(
+                                name,
+                                url,
+                                embedUrl,
+                                headers = mapOf("Referer" to embedUrl)
+                            ).forEach(callback)
+                        } catch (e: Exception) {
+                            logError(e)
                         }
                     }
                 }
@@ -229,39 +209,12 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                         val finalUrl = if (streamUrl.startsWith("//")) "https:$streamUrl" else streamUrl
                         if (finalUrl.contains(".m3u8")) {
                             try {
-                                // Try to detect quality from URL
-                                val quality = when {
-                                    finalUrl.contains("_hd") || finalUrl.contains("1080") -> 1080
-                                    finalUrl.contains("_720") || finalUrl.contains("720") -> 720
-                                    finalUrl.contains("_480") || finalUrl.contains("480") -> 480
-                                    finalUrl.contains("_360") || finalUrl.contains("360") -> 360
-                                    else -> 0
-                                }
-                                
                                 M3u8Helper.generateM3u8(
                                     name,
                                     finalUrl,
                                     embedUrl,
                                     headers = mapOf("Referer" to embedUrl)
-                                ).forEach { link ->
-                                    // Override quality if detected from URL and link's quality is unknown
-                                    if (quality > 0 && link.quality == 0) {
-                                        callback(
-                                            ExtractorLink(
-                                                link.source,
-                                                link.name,
-                                                link.url,
-                                                link.referer,
-                                                quality,
-                                                link.isM3u8,
-                                                link.headers,
-                                                link.extractorData
-                                            )
-                                        )
-                                    } else {
-                                        callback(link)
-                                    }
-                                }
+                                ).forEach(callback)
                             } catch (e: Exception) {
                                 logError(e)
                             }
@@ -272,52 +225,14 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                 // Fallback to direct M3u8 helper
                 if (embedUrl.contains(".m3u8")) {
                     try {
-                        // Try to detect quality from URL
-                        val quality = when {
-                            embedUrl.contains("_hd") || embedUrl.contains("1080") -> 1080
-                            embedUrl.contains("_720") || embedUrl.contains("720") -> 720
-                            embedUrl.contains("_480") || embedUrl.contains("480") -> 480
-                            embedUrl.contains("_360") || embedUrl.contains("360") -> 360
-                            else -> 0
-                        }
-
                         M3u8Helper.generateM3u8(
                             name,
                             embedUrl,
                             referer,
                             headers = mapOf("Referer" to referer)
-                        ).forEach { link ->
-                            // Override quality if detected from URL and link's quality is unknown
-                            if (quality > 0 && link.quality == 0) {
-                                callback(
-                                    ExtractorLink(
-                                        link.source,
-                                        link.name,
-                                        link.url,
-                                        link.referer,
-                                        quality,
-                                        link.isM3u8,
-                                        link.headers,
-                                        link.extractorData
-                                    )
-                                )
-                            } else {
-                                callback(link)
-                            }
-                        }
+                        ).forEach(callback)
                     } catch (e2: Exception) {
-                        // Final fallback: try direct link extraction
                         logError(e2)
-                        callback(
-                            ExtractorLink(
-                                name,
-                                name,
-                                embedUrl,
-                                referer,
-                                0,
-                                true
-                            )
-                        )
                     }
                 }
             }
