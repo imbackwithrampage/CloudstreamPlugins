@@ -3,7 +3,7 @@ package com.likdev256
 import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
-import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
@@ -398,7 +398,7 @@ class TamilUltraProvider : MainAPI() {
                         if (url.contains(".m3u8") && isValidStreamUrl(url)) {
                             try {
                                 callback.invoke(
-                                    ExtractorLink(
+                                    newExtractorLink(
                                         source = name,
                                         name = "$name Direct",
                                         url = url,
