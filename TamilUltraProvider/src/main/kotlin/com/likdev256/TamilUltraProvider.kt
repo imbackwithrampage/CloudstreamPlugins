@@ -4,7 +4,10 @@ import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -14,7 +17,7 @@ import okhttp3.FormBody
 
 @SuppressWarnings("deprecation")
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://tamilultratv.co.in"
+    override var mainUrl = "https://tamilultra.fr"
     override var name = "TamilUltra"
     override val hasMainPage = true
     override var lang = "ta"
@@ -177,29 +180,33 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                             else -> 0
                         }
                         
-                        M3u8Helper.generateM3u8(
-                            name,
-                            url,
-                            embedUrl,
-                            headers = mapOf("Referer" to embedUrl)
-                        ).forEach { link ->
-                            // Override quality if detected from URL and link's quality is unknown
-                            if (quality > 0 && link.quality == 0) {
-                                callback(
-                                    ExtractorLink(
-                                        link.source,
-                                        link.name,
-                                        link.url,
-                                        link.referer,
-                                        quality,
-                                        link.isM3u8,
-                                        link.headers,
-                                        link.extractorData
+                        try {
+                            M3u8Helper.generateM3u8(
+                                name,
+                                url,
+                                embedUrl,
+                                headers = mapOf("Referer" to embedUrl)
+                            ).forEach { link ->
+                                // Override quality if detected from URL and link's quality is unknown
+                                if (quality > 0 && link.quality == 0) {
+                                    callback(
+                                        ExtractorLink(
+                                            link.source,
+                                            link.name,
+                                            link.url,
+                                            link.referer,
+                                            quality,
+                                            link.isM3u8,
+                                            link.headers,
+                                            link.extractorData
+                                        )
                                     )
-                                )
-                            } else {
-                                callback(link)
+                                } else {
+                                    callback(link)
+                                }
                             }
+                        } catch (e: Exception) {
+                            logError(e)
                         }
                     }
                 }
