@@ -1,5 +1,5 @@
 // use an integer for version numbers
-version = 7
+version = 10
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
@@ -29,7 +29,7 @@ android {
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Indian Live TV Provider with updated domain (tamilultra.fr) - Enhanced stream detection for better channel coverage"
+    description = "Indian Live TV Provider - Uses exclusively tamilultra.fr website content for live streaming channels"
     language = "ta"
     authors = listOf("LikDev-256")
 
