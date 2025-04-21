@@ -398,12 +398,12 @@ class TamilUltraProvider : MainAPI() {
                         if (url.contains(".m3u8") && isValidStreamUrl(url)) {
                             try {
                                 callback.invoke(
-                                    ExtractorLink(
-                                        source = name,
-                                        name = "$name Direct",
-                                        url = url,
-                                        referer = embedUrl,
-                                        quality = Qualities.Unknown.value,
+                                    app.newExtractorLink(
+                                        name,
+                                        "$name Direct",
+                                        url,
+                                        embedUrl,
+                                        Qualities.Unknown.value,
                                         isM3u8 = true
                                     )
                                 )
