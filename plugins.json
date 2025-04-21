@@ -3,7 +3,7 @@
         "iconUrl": "https://raw.githubusercontent.com/LikDev-256/likdev256-tamil-providers/master/TamilUltraProvider/icon.png",
         "apiVersion": 1,
         "repositoryUrl": "https://github.com/imbackwithrampage/CloudstreamPlugins",
-        "fileSize": 15864,
+        "fileSize": 18876,
         "status": 1,
         "language": "ta",
         "authors": [
@@ -12,9 +12,9 @@
         "tvTypes": [
             "Live"
         ],
-        "version": 6,
+        "version": 7,
         "internalName": "TamilUltraProvider",
-        "description": "Indian Live TV Provider with updated domain (tamilultra.fr) - Enhanced stream detection and quality selection",
+        "description": "Indian Live TV Provider with updated domain (tamilultra.fr) - Enhanced stream detection for better channel coverage",
         "url": "https://raw.githubusercontent.com/imbackwithrampage/CloudstreamPlugins/builds/TamilUltraProvider.cs3",
         "name": "TamilUltraProvider"
     }

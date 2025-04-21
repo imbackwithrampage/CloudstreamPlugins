@@ -1,12 +1,13 @@
 // use an integer for version numbers
-version = 6
+version = 7
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     kotlinOptions {
         freeCompilerArgs += listOf(
             "-Xno-call-assertions",
             "-Xno-param-assertions",
-            "-Xno-receiver-assertions"
+            "-Xno-receiver-assertions",
+            "-Xdeprecated-is-warning"
         )
     }
 }
@@ -28,7 +29,7 @@ android {
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Indian Live TV Provider with updated domain (tamilultra.fr) - Enhanced stream detection and quality selection"
+    description = "Indian Live TV Provider with updated domain (tamilultra.fr) - Enhanced stream detection for better channel coverage"
     language = "ta"
     authors = listOf("LikDev-256")
 

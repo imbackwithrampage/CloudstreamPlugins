@@ -15,7 +15,6 @@ import org.jsoup.nodes.Element
 import com.lagradost.nicehttp.NiceResponse
 import okhttp3.FormBody
 
-@SuppressWarnings("deprecation")
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
     override var mainUrl = "https://tamilultra.fr"
     override var name = "TamilUltra"
@@ -45,7 +44,6 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
             app.get(request.data + "/page/$page/").document
         }
 
-        //Log.d("Document", request.data)
         val home = document.select("div.items > article.item").mapNotNull {
                 it.toSearchResult()
             }
@@ -54,14 +52,10 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-        //Log.d("Got","got here")
         val title = this.selectFirst("div.data > h3 > a")?.text()?.toString()?.trim()
             ?: return null
-        //Log.d("title", title)
         val href = fixUrl(this.selectFirst("div.data > h3 > a")?.attr("href").toString())
-        //Log.d("href", href)
         val posterUrl = fixUrlNull(this.selectFirst("div.poster > img")?.attr("src"))
-        //Log.d("posterUrl", posterUrl.toString())
         return newMovieSearchResponse(title, href, TvType.Live) {
                 this.posterUrl = posterUrl
             }
@@ -69,20 +63,16 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
 
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/?s=$query").document
-        //Log.d("document", document.toString())
 
         return document.select("div.result-item").mapNotNull {
             val title =
                 it.selectFirst("article > div.details > div.title > a")?.text().toString().trim()
-            //Log.d("title", titleS)
             val href = fixUrl(
                 it.selectFirst("article > div.details > div.title > a")?.attr("href").toString()
             )
-            //Log.d("href", href)
             val posterUrl = fixUrlNull(
                 it.selectFirst("article > div.image > div.thumbnail > a > img")?.attr("src")
             )
-            //Log.d("posterUrl", posterUrl.toString())
 
             newMovieSearchResponse(title, href, TvType.Live) {
                     this.posterUrl = posterUrl
@@ -112,9 +102,7 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
 
     override suspend fun load(url: String): LoadResponse {
         val doc = app.get(url).document
-        //Log.d("Doc", doc.toString())
         val title = doc.select("div.sheader > div.data > h1").text()
-        //Log.d("title", title)
         val poster = fixUrlNull(doc.selectFirst("div.poster > img")?.attr("src"))
         val id = doc.select("#player-option-1").attr("data-post")
 
@@ -123,7 +111,6 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
             }
     }
 
-    @Suppress("DEPRECATION")
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -139,7 +126,7 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
             val embedData = try {
                 embedResponse.parsed<EmbedUrl>()
             } catch (e: Exception) {
-                logError(e)
+                Log.e("TamilUltra", "Error parsing embed URL: ${e.message}")
                 return false
             }
             
@@ -151,22 +138,70 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
             // Try direct M3u8 handling
             try {
                 val iframeDoc = app.get(embedUrl, referer = referer).document
+                val iframeHtml = iframeDoc.html()
                 
                 // Look for source tags
                 val sourceUrls = iframeDoc.select("source").mapNotNull { 
                     it.attr("src").takeIf { it.isNotBlank() }
                 }
                 
-                // Look for m3u8 URLs in scripts
-                val scriptData = iframeDoc.select("script").mapNotNull { 
-                    try { it.data() } catch (e: Exception) { null } 
-                }.joinToString("\n")
-                // Enhanced regex to catch more variations of m3u8 URLs
-                val m3u8Regex = Regex("['\"](https?://[^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]")
-                val m3u8Urls = m3u8Regex.findAll(scriptData).map { it.groupValues[1] }.toList()
+                // Look for m3u8 URLs in the HTML
+                val m3u8Patterns = listOf(
+                    Regex("['\"](https?://[^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]"),
+                    Regex("['\"]([^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]"),
+                    Regex("file:\\s*['\"](https?://[^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]"),
+                    Regex("source:\\s*['\"](https?://[^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]"),
+                    Regex("src:\\s*['\"](https?://[^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]"),
+                    Regex("\\{[^\\}]*?['\"](?:file|source|src|url|link|stream)['\"]\\s*:\\s*['\"]([^'\"]+?\\.m3u8[^'\"]*?)['\"]")
+                )
                 
-                // Combine all URLs
-                val allStreamUrls = (sourceUrls + m3u8Urls).filter { it.isNotBlank() }.distinct()
+                val m3u8Urls = mutableListOf<String>()
+                m3u8Patterns.forEach { pattern ->
+                    pattern.findAll(iframeHtml).mapNotNull { 
+                        it.groupValues.lastOrNull { group -> group.isNotBlank() && group.contains(".m3u8") }
+                    }.toList().also { m3u8Urls.addAll(it) }
+                }
+                
+                // Process URLs from iframes
+                iframeDoc.select("iframe").forEach { iframe ->
+                    val src = iframe.attr("src")
+                    if (src.isNotBlank()) {
+                        try {
+                            val fullUrl = if (src.startsWith("//")) "https:$src" 
+                                else if (src.startsWith("/")) "$mainUrl$src" 
+                                else src
+                            val childDoc = app.get(fullUrl, referer = embedUrl).document
+                            val childHtml = childDoc.html()
+                            
+                            m3u8Patterns.forEach { pattern ->
+                                pattern.findAll(childHtml).mapNotNull {
+                                    it.groupValues.lastOrNull { group -> group.isNotBlank() && group.contains(".m3u8") }
+                                }.toList().also { m3u8Urls.addAll(it) }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("TamilUltra", "Error processing iframe: ${e.message}")
+                        }
+                    }
+                }
+                
+                // Process any data attributes
+                iframeDoc.select("[data-stream], [data-src], [data-source]").forEach { element ->
+                    listOf("data-stream", "data-src", "data-source").forEach { attr ->
+                        val value = element.attr(attr)
+                        if (value.isNotBlank() && value.contains(".m3u8")) {
+                            m3u8Urls.add(value)
+                        }
+                    }
+                }
+                
+                // Combine and normalize all URLs
+                val allStreamUrls = (sourceUrls + m3u8Urls).filter { it.isNotBlank() }
+                    .map { 
+                        if (it.startsWith("//")) "https:$it" 
+                        else if (it.startsWith("/")) "$mainUrl$it" 
+                        else it
+                    }
+                    .distinct()
                 
                 // Process M3U8 links
                 allStreamUrls.forEach { url ->
@@ -175,80 +210,63 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                             M3u8Helper.generateM3u8(
                                 name,
                                 url,
-                                embedUrl,
-                                headers = mapOf("Referer" to embedUrl)
+                                embedUrl
                             ).forEach(callback)
                         } catch (e: Exception) {
-                            logError(e)
+                            Log.e("TamilUltra", "Error processing M3U8: ${e.message}")
                         }
                     }
                 }
                 
-                // Check for stream URL in params
-                if (embedUrl.contains(".php?")) {
-                    // Enhanced PHP parameter parsing
-                    val queryParams = try {
-                        val queryString = embedUrl.substringAfter(".php?", "")
-                        if (queryString.isNotBlank()) {
-                            queryString.split("&").mapNotNull { param ->
-                                val parts = param.split("=", limit = 2)
-                                if (parts.size == 2) parts[0] to parts[1] else null
-                            }.toMap()
-                        } else emptyMap()
-                    } catch (e: Exception) {
-                        emptyMap<String, String>()
-                    }
-                    
-                    // Check common parameter names used for stream URLs
-                    val possibleStreamParams = listOf("source", "src", "file", "stream", "url", "link", "video")
-                    val streamUrl = possibleStreamParams.firstNotNullOfOrNull { param ->
-                        queryParams[param]?.takeIf { it.isNotBlank() }
-                    } ?: embedUrl.substringAfter(".php?")
-                    
-                    if (streamUrl.isNotBlank() && (streamUrl.startsWith("http") || streamUrl.startsWith("//"))) {
-                        val finalUrl = if (streamUrl.startsWith("//")) "https:$streamUrl" else streamUrl
-                        if (finalUrl.contains(".m3u8")) {
-                            try {
-                                M3u8Helper.generateM3u8(
-                                    name,
-                                    finalUrl,
-                                    embedUrl,
-                                    headers = mapOf("Referer" to embedUrl)
-                                ).forEach(callback)
-                            } catch (e: Exception) {
-                                logError(e)
+                // Check for stream URL in query params
+                if (embedUrl.contains("?")) {
+                    val queryString = embedUrl.substringAfter("?")
+                    queryString.split("&").forEach { param ->
+                        val parts = param.split("=", limit = 2)
+                        if (parts.size == 2) {
+                            val paramName = parts[0]
+                            val paramValue = parts[1]
+                            
+                            if (listOf("source", "src", "file", "stream", "url", "link").contains(paramName) &&
+                                paramValue.isNotBlank() && (paramValue.contains(".m3u8") || paramValue.contains("//"))) {
+                                
+                                val streamUrl = if (paramValue.startsWith("//")) "https:$paramValue" else paramValue
+                                if (streamUrl.contains(".m3u8")) {
+                                    try {
+                                        M3u8Helper.generateM3u8(
+                                            name,
+                                            streamUrl,
+                                            embedUrl
+                                        ).forEach(callback)
+                                    } catch (e: Exception) {
+                                        Log.e("TamilUltra", "Error processing query param stream: ${e.message}")
+                                    }
+                                }
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                // Fallback to direct M3u8 helper
+                Log.e("TamilUltra", "Error in main stream processing: ${e.message}")
+                
+                // Fallback to direct M3u8 helper if embedUrl itself is an m3u8 file
                 if (embedUrl.contains(".m3u8")) {
                     try {
                         M3u8Helper.generateM3u8(
                             name,
                             embedUrl,
-                            referer,
-                            headers = mapOf("Referer" to referer)
+                            referer
                         ).forEach(callback)
                     } catch (e2: Exception) {
-                        logError(e2)
+                        Log.e("TamilUltra", "Error in fallback stream processing: ${e2.message}")
                     }
                 }
             }
             
             return true
         } catch (e: Exception) {
-            logError(e)
+            Log.e("TamilUltra", "General error: ${e.message}")
             return false
-        }
-    }
-    
-    private fun logError(e: Exception) {
-        try {
-            Log.e("TamilUltra", "Error: ${e.message}", e)
-        } catch (_: Exception) {
-            // Ignore logging errors
         }
     }
 }
