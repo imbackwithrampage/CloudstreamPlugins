@@ -1,16 +1,34 @@
 // use an integer for version numbers
-version = 4
+version = 6
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        freeCompilerArgs += listOf(
+            "-Xno-call-assertions",
+            "-Xno-param-assertions",
+            "-Xno-receiver-assertions"
+        )
+    }
+}
 
 android {
-    kotlinOptions {
-        freeCompilerArgs = freeCompilerArgs + "-Xdeprecation-is-not-an-error"
+    compileSdkVersion(33)
+    
+    defaultConfig {
+        minSdk = 21
+        targetSdk = 33
+    }
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
 cloudstream {
     // All of these properties are optional, you can safely remove them
 
-    description = "Indian Live TV Provider - Fixed streaming functionality and compatibility"
+    description = "Indian Live TV Provider with updated domain (tamilultra.fr) - Enhanced stream detection and quality selection"
     language = "ta"
     authors = listOf("LikDev-256")
 

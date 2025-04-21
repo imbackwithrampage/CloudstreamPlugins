@@ -4,7 +4,10 @@ import android.util.Log
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
+import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.M3u8Helper
 import com.lagradost.cloudstream3.utils.getQualityFromName
 import com.lagradost.cloudstream3.utils.loadExtractor
@@ -14,7 +17,7 @@ import okhttp3.FormBody
 
 @SuppressWarnings("deprecation")
 class TamilUltraProvider : MainAPI() { // all providers must be an instance of MainAPI
-    override var mainUrl = "https://tamilultratv.co.in"
+    override var mainUrl = "https://tamilultra.fr"
     override var name = "TamilUltra"
     override val hasMainPage = true
     override var lang = "ta"
@@ -158,7 +161,8 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                 val scriptData = iframeDoc.select("script").mapNotNull { 
                     try { it.data() } catch (e: Exception) { null } 
                 }.joinToString("\n")
-                val m3u8Regex = Regex("['\"](https?://[^'\"]+\\.m3u8[^'\"]*)['\"]")
+                // Enhanced regex to catch more variations of m3u8 URLs
+                val m3u8Regex = Regex("['\"](https?://[^'\"]+?\\.m3u8(?:[^'\"]*?))['\"]")
                 val m3u8Urls = m3u8Regex.findAll(scriptData).map { it.groupValues[1] }.toList()
                 
                 // Combine all URLs
@@ -167,36 +171,74 @@ class TamilUltraProvider : MainAPI() { // all providers must be an instance of M
                 // Process M3U8 links
                 allStreamUrls.forEach { url ->
                     if (url.contains(".m3u8")) {
+                        // Try to detect quality from URL
+                        val quality = when {
+                            url.contains("_hd") || url.contains("1080") -> 1080
+                            url.contains("_720") || url.contains("720") -> 720
+                            url.contains("_480") || url.contains("480") -> 480
+                            url.contains("_360") || url.contains("360") -> 360
+                            else -> 0
+                        }
+                        
                         M3u8Helper.generateM3u8(
                             name,
                             url,
-                            embedUrl
+                            embedUrl,
+                            headers = mapOf("Referer" to embedUrl)
                         ).forEach(callback)
                     }
                 }
                 
                 // Check for stream URL in params
                 if (embedUrl.contains(".php?")) {
-                    val streamUrl = embedUrl.substringAfter(".php?")
+                    // Enhanced PHP parameter parsing
+                    val queryParams = try {
+                        val queryString = embedUrl.substringAfter(".php?", "")
+                        if (queryString.isNotBlank()) {
+                            queryString.split("&").mapNotNull { param ->
+                                val parts = param.split("=", limit = 2)
+                                if (parts.size == 2) parts[0] to parts[1] else null
+                            }.toMap()
+                        } else emptyMap()
+                    } catch (e: Exception) {
+                        emptyMap<String, String>()
+                    }
+                    
+                    // Check common parameter names used for stream URLs
+                    val possibleStreamParams = listOf("source", "src", "file", "stream", "url", "link", "video")
+                    val streamUrl = possibleStreamParams.firstNotNullOfOrNull { param ->
+                        queryParams[param]?.takeIf { it.isNotBlank() }
+                    } ?: embedUrl.substringAfter(".php?")
+                    
                     if (streamUrl.isNotBlank() && (streamUrl.startsWith("http") || streamUrl.startsWith("//"))) {
                         val finalUrl = if (streamUrl.startsWith("//")) "https:$streamUrl" else streamUrl
                         if (finalUrl.contains(".m3u8")) {
-                            M3u8Helper.generateM3u8(
-                                name,
-                                finalUrl,
-                                embedUrl
-                            ).forEach(callback)
+                            try {
+                                M3u8Helper.generateM3u8(
+                                    name,
+                                    finalUrl,
+                                    embedUrl,
+                                    headers = mapOf("Referer" to embedUrl)
+                                ).forEach(callback)
+                            } catch (e: Exception) {
+                                logError(e)
+                            }
                         }
                     }
                 }
             } catch (e: Exception) {
                 // Fallback to direct M3u8 helper
                 if (embedUrl.contains(".m3u8")) {
-                    M3u8Helper.generateM3u8(
-                        name,
-                        embedUrl,
-                        referer
-                    ).forEach(callback)
+                    try {
+                        M3u8Helper.generateM3u8(
+                            name,
+                            embedUrl,
+                            referer,
+                            headers = mapOf("Referer" to referer)
+                        ).forEach(callback)
+                    } catch (e2: Exception) {
+                        logError(e2)
+                    }
                 }
             }
             
